@@ -1,0 +1,19 @@
+{
+  "name": "instagram-live-private-api",
+  "version": "1.0.0",
+  "description": "Livestream API for instagram.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/master312/instagram-live-private-api-js.git"
+  },
+  "author": "substationNs",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/master312/instagram-live-private-api-js/issues"
+  },
+  "homepage": "https://github.com/master312/instagram-live-private-api-js#readme"
+}
