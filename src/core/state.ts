@@ -26,7 +26,7 @@ export default class State {
      * Place to store cookieJar
      * @private
      */
-    private cookieJar: toughCookie.CookieJar;
+    public cookieJar: toughCookie.CookieJar;
 
     /**
      * Holds info about virtual device we are using to connect to instagram.

@@ -1,9 +1,9 @@
 import State from "./state";
 import DeviceInfo from "./deviceInfo";
 import * as constants from "./constants";
+import requestPromise from "request-promise";
 
 const loadSh = require("lodash")
-const requestPromise = require("request-promise");
 
 
 export class Request {
@@ -14,8 +14,59 @@ export class Request {
         this.state = state;
     }
 
-    public async send(options: object) {
-        requestPromise(options);
+    /**
+     * Sends request to instagram.
+     * @param userOptions Options to be added to the request. Additional default options will be added in this method.
+     * @return response data or throws error
+     */
+    public async send(userOptions: object) {
+        // Fill in / merge default values with userOptions.
+        const options = loadSh.defaultsDeep(
+            userOptions,
+            {
+                baseUrl: 'https://i.instagram.com/',
+                resolveWithFullResponse: true,
+                proxy: "",
+                simple: false,
+                transform: Request.responseAutoParse,
+                jar: this.state.cookieJar,
+                strictSSL: false,
+                gzip: true,
+                headers: this.genDefaultHeaders(),
+                method: 'GET',
+            }
+        );
+
+        console.log(`-- Sending IG request: ${options.method} url: ${options.url || options.uri || '!NO URL SPECIFIED!'}`)
+        let response = await requestPromise(options);
+
+        console.log(`-- Got response. Status code: ${response.statusCode}`);
+        if (response.body.status === 'ok' || response.statusCode === 200) {
+            this.parseResponseHeaders(response);
+            return response;
+        }
+
+        // TODO: Proper error handling
+        throw new Error(`-- HTTP REQUEST ERROR: ${response}`);
+    }
+
+    /**
+     * Will parse response headers and try to extract information we might need globally
+     * @param response object received from request
+     * @private
+     */
+    private parseResponseHeaders(response: object) {
+        // TODO: ...
+    }
+
+    /**
+     * User by requestPromise to parse arguments
+     * See https://github.com/request/request-promise#the-transform-function
+     */
+    private static responseAutoParse(body: any, response: any, resolveWithFullResponse: boolean) {
+        // We will assume that response is always in json format
+        response.body = JSON.parse(body);
+        return resolveWithFullResponse ? response : response.body;
     }
 
     /**
