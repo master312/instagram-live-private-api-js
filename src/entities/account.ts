@@ -73,12 +73,41 @@ export default class AccountEntity {
         this.loginTime = new Date();
         this.username = response.body.logged_in_user.username;
         this.state.authorization = response.headers['ig-set-auhorization'];
-
         console.log(`User logged in! ID: ${this.userId} Username: ${this.username}`)
     }
 
-    public async logout() {
 
+    /**
+     * End user session, and logs out.
+     * TODO: untested.
+     */
+    public async logout() {
+        if (!this.isLoggedIn) {
+            return;
+        }
+
+        const deviceInfo = this.state.deviceInfo;
+
+        console.log("Instagram logging out...")
+        const response = await this.state.request.send({
+            method: 'POST',
+            url: '/api/v1/accounts/logout/',
+            form: {
+                guid: deviceInfo.uuid,
+                phone_id: deviceInfo.phoneId,
+                _csrftoken: this.state.getCookieCsrf(),
+                device_id: deviceInfo.deviceId,
+                _uuid: deviceInfo.uuid,
+            },
+        });
+
+        // TODO: Maybe check response for status?
+
+        this.userId = 0;
+        this.isLoggedIn = false;
+        this.username = "";
+        this.state.authorization = undefined;
+        console.log("Instagram logged out.");
     }
 
     /**
