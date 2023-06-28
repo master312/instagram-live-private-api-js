@@ -80,7 +80,13 @@ export class Request {
             return response;
         }
 
-        response.body = JSON.parse(body);
+        try {
+            response.body = JSON.parse(body);
+        } catch (e) {
+            console.log(`Exception parsing body: ${e}`);
+            return response;
+        }
+
         return resolveWithFullResponse ? response : response.body;
     }
 
@@ -120,7 +126,7 @@ export class Request {
             'X-IG-Android-ID': deviceInfo.deviceId,
             'X-FB-HTTP-Engine': 'Liger',
             'Accept-Language': "en-US",
-            Authorization: this.state.authorization, // Example: -> Bearer IGT:2:eyJkc191c2VyX2lkIjoiNTE2NjcxMzIiLCJz
+            'Authorization': this.state.authorization, // Example: -> Bearer IGT:2:eyJkc191c2VyX2lkIjoiNTE2NjcxMzIiLCJz
             Host: 'i.instagram.com',
             'Accept-Encoding': 'gzip',
             Connection: 'close',

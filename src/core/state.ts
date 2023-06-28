@@ -41,6 +41,12 @@ export default class State {
     public authorization: any = undefined;
 
     /**
+     * User ID retrieved from instagram on login.
+     * Related to authorization
+     */
+    public dsUserId: number = 0;
+
+    /**
      * Request instance object, used to send requests to instagram
      */
     public request: Request;

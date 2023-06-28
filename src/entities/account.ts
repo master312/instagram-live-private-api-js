@@ -60,7 +60,7 @@ export default class AccountEntity {
                 country_codes: JSON.stringify([{country_code: '1', source: 'default'}]),
                 jazoest: AccountEntity.createJazoest(deviceInfo.phoneId),
             }),
-        })
+        });
 
         console.log(`Account login response code: ${response.statusCode}`);
         if (response.statusCode != 200) {
@@ -69,13 +69,13 @@ export default class AccountEntity {
         }
 
         this.userId = response.body.logged_in_user.pk_id;
+        this.state.dsUserId = this.userId;
         this.isLoggedIn = true;
         this.loginTime = new Date();
         this.username = response.body.logged_in_user.username;
-        this.state.authorization = response.headers['ig-set-auhorization'];
+        this.state.authorization = response.headers['ig-set-authorization'];
         console.log(`User logged in! ID: ${this.userId} Username: ${this.username}`)
     }
-
 
     /**
      * End user session, and logs out.
@@ -104,6 +104,7 @@ export default class AccountEntity {
         // TODO: Maybe check response for status?
 
         this.userId = 0;
+        this.state.dsUserId = 0;
         this.isLoggedIn = false;
         this.username = "";
         this.state.authorization = undefined;
