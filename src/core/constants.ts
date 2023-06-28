@@ -15,7 +15,8 @@ export const IG_REST_HOST = `https://${IG_HOSTNAME}/`;
 export const IG_REST_WEB_HOST = `https://${IG_WEB_HOSTNAME}/`;
 export const BLOKS_VERSION_ID = '1b030ce63a06c25f3e4de6aaaf6802fe1e76401bc5ab6e5fb85ed6c2d333e0c7';
 export const PIGEON_SESSION_LIFETIME = 1210101
-
+export const SIGNATURE_KEY = '9193488027538fd3450b83b7d05286d4ca9599a0f7eeed90d8c85925698a05dc';
+export const SIGNATURE_VERSION = '4';
 /**
  * String of random devices to be used as user agent
  */

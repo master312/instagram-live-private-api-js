@@ -1,9 +1,12 @@
-function sayMyName(name: string): void {
-    if (name === "Heisenberg") {
-        console.log("You're right gani 👍");
-    } else {
-        console.log("You're wrong ganiZ 👎");
-    }
-}
+const bb = require("bluebird")
 
-sayMyName("Heisenberg");
+import { State, AccountEntity } from "../index";
+
+const newState = new State();
+const accountEntity = new AccountEntity(newState);
+
+
+bb.try(async () => {
+    await newState.initialize();
+    await accountEntity.login("", "");
+})

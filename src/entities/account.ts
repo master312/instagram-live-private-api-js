@@ -2,9 +2,8 @@
 
 import * as crypto from "crypto";
 import State from "../core/state"
-import * as Bluebird from "bluebird"
 
-export class AccountEntity {
+export default class AccountEntity {
     /**
      * Account username
      * @private
@@ -13,7 +12,6 @@ export class AccountEntity {
 
     /**
      * UserID received from instagram.
-     * TODO: 'number' might be invalid type
      * @private
      */
     private userId: number = 0;
@@ -28,23 +26,59 @@ export class AccountEntity {
      * Time when was this user logged in
      * @private
      */
-    private loginTime: Date = new Date();
+    private loginTime: Date = new Date("");
 
     /**
      * Main state object
      * @private
      */
-    private appState: State;
+    private state: State;
 
     constructor(appState: State) {
-        this.appState = appState;
+        this.state = appState;
     }
 
-    public async login(username: string, password: string) {
-        this.username = username;
+    public async login(email: string, password: string) {
+        const {encrypted, time} = this.encryptPassword(password);
+
+        let deviceInfo = this.state.deviceInfo;
+        // Will throw exception on failure
+        // TODO: maybe handle properly? There might be body.message with error message
+        const response = await this.state.request.send({
+            method: 'POST',
+            url: '/api/v1/accounts/login/',
+            form: this.state.request.sign({
+                username: email,
+                enc_password: `#PWD_INSTAGRAM:4:${time}:${encrypted}`,
+                guid: deviceInfo.uuid,
+                phone_id: deviceInfo.phoneId,
+                _csrftoken: this.state.getCookieCsrf(),
+                device_id: deviceInfo.deviceId,
+                adid: deviceInfo.adid,
+                google_tokens: '[]',
+                login_attempt_count: 0,
+                country_codes: JSON.stringify([{country_code: '1', source: 'default'}]),
+                jazoest: AccountEntity.createJazoest(deviceInfo.phoneId),
+            }),
+        })
+
+        console.log(`Account login response code: ${response.statusCode}`);
+        if (response.statusCode != 200) {
+            console.log("ERROR: Failed to login!");
+            return;
+        }
+
+        this.userId = response.body.logged_in_user.pk_id;
+        this.isLoggedIn = true;
+        this.loginTime = new Date();
+        this.username = response.body.logged_in_user.username;
+        this.state.authorization = response.headers['ig-set-auhorization'];
+
+        console.log(`User logged in! ID: ${this.userId} Username: ${this.username}`)
     }
 
     public async logout() {
+
     }
 
     /**
@@ -53,6 +87,7 @@ export class AccountEntity {
      * @returns object returned from server.
      */
     public async getUserInfo() {
+        // TODO: ...
     }
 
     private encryptPassword(password: string) {
@@ -67,7 +102,7 @@ export class AccountEntity {
         const aesEncrypted = Buffer.concat([cipher.update(password, 'utf8'), cipher.final()]);
         const sizeBuffer = Buffer.alloc(2, 0);
         const rsaEncrypted = crypto.publicEncrypt({
-            key: Buffer.from(this.appState.passwordEncryptPubKey, 'base64').toString(),
+            key: Buffer.from(this.state.passwordEncryptPubKey, 'base64').toString(),
             padding: crypto.constants.RSA_PKCS1_PADDING,
         }, randKey);
 
@@ -76,11 +111,21 @@ export class AccountEntity {
         return {
             time,
             encrypted: Buffer.concat([
-                Buffer.from([1, this.appState.passwordEncryptKeyId]),
+                Buffer.from([1, this.state.passwordEncryptKeyId]),
                 iv,
                 sizeBuffer,
                 rsaEncrypted, authTag, aesEncrypted
             ]).toString('base64'),
         };
+    }
+
+    private static createJazoest(input: string) {
+        const buf = Buffer.from(input, 'ascii');
+        let sum = 0;
+        for (let i = 0; i < buf.byteLength; i++) {
+            sum += buf.readUInt8(i);
+        }
+
+        return `2${sum}`;
     }
 }

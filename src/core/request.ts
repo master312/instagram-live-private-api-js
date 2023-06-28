@@ -2,9 +2,8 @@ import State from "./state";
 import DeviceInfo from "./deviceInfo";
 import * as constants from "./constants";
 import requestPromise from "request-promise";
-
+import * as crypto from "crypto";
 const loadSh = require("lodash")
-
 
 export class Request {
 
@@ -17,9 +16,10 @@ export class Request {
     /**
      * Sends request to instagram.
      * @param userOptions Options to be added to the request. Additional default options will be added in this method.
+     * @param ignoreHttpErrors if set, all error handling will be skipped in this method.
      * @return response data or throws error
      */
-    public async send(userOptions: object) {
+    public async send(userOptions: object, ignoreHttpErrors: boolean = false) {
         // Fill in / merge default values with userOptions.
         const options = loadSh.defaultsDeep(
             userOptions,
@@ -41,22 +41,33 @@ export class Request {
         let response = await requestPromise(options);
 
         console.log(`-- Got response. Status code: ${response.statusCode}`);
-        if (response.body.status === 'ok' || response.statusCode === 200) {
-            this.parseResponseHeaders(response);
+        if (ignoreHttpErrors || response.statusCode === 200 || (response.body && response.body.status === 'ok')) {
             return response;
         }
 
         // TODO: Proper error handling
-        throw new Error(`-- HTTP REQUEST ERROR: ${response}`);
+        throw new Error(`-- HTTP REQUEST. RAW-RESPONSE: ${JSON.stringify(response)}`);
     }
 
     /**
-     * Will parse response headers and try to extract information we might need globally
-     * @param response object received from request
-     * @private
+     * Queue instagram core headers.
      */
-    private parseResponseHeaders(response: object) {
-        // TODO: ...
+    public async requestSyncValues() {
+        const response = await this.send({
+            method: 'GET',
+            url: '/api/v1/qe/sync/'
+        }, true);
+
+        return response.headers;
+    }
+
+    public sign(payload: any) {
+        const json = typeof payload === 'object' ? JSON.stringify(payload) : payload;
+        const signature = crypto.createHmac('sha256', constants.SIGNATURE_KEY).update(json).digest('hex');
+        return {
+            ig_sig_key_version: constants.SIGNATURE_VERSION,
+            signed_body: `${signature}.${json}`,
+        };
     }
 
     /**
@@ -65,6 +76,10 @@ export class Request {
      */
     private static responseAutoParse(body: any, response: any, resolveWithFullResponse: boolean) {
         // We will assume that response is always in json format
+        if (typeof body === 'undefined' || !body.trim()) {
+            return response;
+        }
+
         response.body = JSON.parse(body);
         return resolveWithFullResponse ? response : response.body;
     }
@@ -75,6 +90,9 @@ export class Request {
     private genDefaultHeaders() {
         let temp;
         let deviceInfo: DeviceInfo = this.state.deviceInfo;
+        let min = 1000;
+        let max = 3700;
+        let connectionSpeed = Math.floor(Math.random() * (max - min + 1)) + min;
         return {
             'User-Agent': deviceInfo.userAgent,
             'X-Ads-Opt-Out': '1',
@@ -84,7 +102,7 @@ export class Request {
             'X-IG-App-Locale': "en_US",
             'X-Pigeon-Session-Id': this.state.getPigeonSessionId(),
             'X-Pigeon-Rawclienttime': (Date.now() / 1000).toFixed(3),
-            'X-IG-Connection-Speed': `${loadSh.randomInt(1000, 3700)}kbps`,
+            'X-IG-Connection-Speed': `${connectionSpeed}kbps`,
             'X-IG-Bandwidth-Speed-KBPS': '-1.000',
             'X-IG-Bandwidth-TotalTime-MS': '0',
             'X-IG-Bandwidth-TotalBytes-B': '0',
@@ -102,7 +120,7 @@ export class Request {
             'X-IG-Android-ID': deviceInfo.deviceId,
             'X-FB-HTTP-Engine': 'Liger',
             'Accept-Language': "en-US",
-            // Authorization: this.client.state.authorization, TODO: ...!!! This si received from login resposne??? Example: -> Bearer IGT:2:eyJkc191c2VyX2lkIjoiNTE2NjcxMzIiLCJz
+            Authorization: this.state.authorization, // Example: -> Bearer IGT:2:eyJkc191c2VyX2lkIjoiNTE2NjcxMzIiLCJz
             Host: 'i.instagram.com',
             'Accept-Encoding': 'gzip',
             Connection: 'close',
