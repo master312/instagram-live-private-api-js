@@ -6,27 +6,24 @@ import State from "../core/state"
 export default class AccountEntity {
     /**
      * Account username
-     * @private
      */
-    private username: string = "";
+    public username: string = "";
 
     /**
      * UserID received from instagram.
-     * @private
      */
-    private userId: number = 0;
+    public userId: number = 0;
 
     /**
      * Is user logged in
-     * @private
      */
-    private isLoggedIn: boolean = false;
+    public isLoggedIn: boolean = false;
 
     /**
      * Time when was this user logged in
      * @private
      */
-    private loginTime: Date = new Date("");
+    public loginTime: Date = new Date("");
 
     /**
      * Main state object
